@@ -8,7 +8,7 @@ coil_A_1_pin = 4 #Orange
 coil_B_1_pin = 17 # Pink
 coil_A_2_pin = 24 #Yellow
 coil_B_2_pin = 23 # Blue
-
+# Fuck you Alan
 GPIO.setup(enable_pin, GPIO.OUT)
 GPIO.setup(coil_A_1_pin, GPIO.OUT)
 GPIO.setup(coil_A_2_pin, GPIO.OUT)
