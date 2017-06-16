@@ -1,6 +1,12 @@
 import RPi.GPIO as GPIO
 import time
+import picamera
+# Load Camera
+camera=piCamera()
+camera.resolution (320,240)
+camera.capture("olakease.jpg")
 
+#Set mode for GPIO
 GPIO.setmode(GPIO.BCM)
 
 enable_pin = 18 # Enable H Bridge
