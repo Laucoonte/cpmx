@@ -2,9 +2,11 @@ import os
 import cv2
 import time
 import argparse
-import multiprocessing
 import numpy as np
 import tensorflow as tf
+
+# Imports for Debugging
+from pprint import pprint
 
 from utils import FPS, WebcamVideoStream
 from multiprocessing import Process, Queue, Pool
@@ -28,6 +30,21 @@ categories = label_map_util.convert_label_map_to_categories(label_map, max_num_c
                                                             use_display_name=True)
 category_index = label_map_util.create_category_index(categories)
 
+# Argument parser
+parser = argparse.ArgumentParser()
+parser.add_argument('-src', '--source', dest='video_source', type=int,
+                    default=0, help='Device index of the camera.')
+parser.add_argument('-wd', '--width', dest='width', type=int,
+                    default=480, help='Width of the frames in the video stream.')
+parser.add_argument('-ht', '--height', dest='height', type=int,
+                    default=360, help='Height of the frames in the video stream.')
+parser.add_argument('-num-w', '--num-workers', dest='num_workers', type=int,
+                    default=2, help='Number of workers.')
+parser.add_argument('-q-size', '--queue-size', dest='queue_size', type=int,
+                    default=5, help='Size of the queue.')
+args = parser.parse_args()
+
+## Init program
 
 def detect_objects(image_np, sess, detection_graph):
     # Expand dimensions since the model expects images to have shape: [1, None, None, 3]
@@ -36,7 +53,6 @@ def detect_objects(image_np, sess, detection_graph):
 
     # Each box represents a part of the image where a particular object was detected.
     boxes = detection_graph.get_tensor_by_name('detection_boxes:0')
-
     # Each score represent how level of confidence for each of the objects.
     # Score is shown on the result image, together with the class label.
     scores = detection_graph.get_tensor_by_name('detection_scores:0')
@@ -47,7 +63,7 @@ def detect_objects(image_np, sess, detection_graph):
     (boxes, scores, classes, num_detections) = sess.run(
         [boxes, scores, classes, num_detections],
         feed_dict={image_tensor: image_np_expanded})
-
+    #print(np.squeeze(boxes).shape)
     # Visualization of the results of a detection.
     vis_util.visualize_boxes_and_labels_on_image_array(
         image_np,
@@ -81,24 +97,7 @@ def worker(input_q, output_q):
     fps.stop()
     sess.close()
 
-
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-src', '--source', dest='video_source', type=int,
-                        default=0, help='Device index of the camera.')
-    parser.add_argument('-wd', '--width', dest='width', type=int,
-                        default=480, help='Width of the frames in the video stream.')
-    parser.add_argument('-ht', '--height', dest='height', type=int,
-                        default=360, help='Height of the frames in the video stream.')
-    parser.add_argument('-num-w', '--num-workers', dest='num_workers', type=int,
-                        default=2, help='Number of workers.')
-    parser.add_argument('-q-size', '--queue-size', dest='queue_size', type=int,
-                        default=5, help='Size of the queue.')
-    args = parser.parse_args()
-
-    logger = multiprocessing.log_to_stderr()
-    logger.setLevel(multiprocessing.SUBDEBUG)
-
     input_q = Queue(maxsize=args.queue_size)
     output_q = Queue(maxsize=args.queue_size)
 
@@ -122,12 +121,11 @@ if __name__ == '__main__':
 
         print('[INFO] elapsed time: {:.2f}'.format(time.time() - t))
 
-        if cv2.waitKey(1) & 0xFF == ord('q'):
+        if cv2.waitKey(1) & 0xFF ==  27 : # Press Esc for quit
             break
 
     fps.stop()
     print('[INFO] elapsed time (total): {:.2f}'.format(fps.elapsed()))
     print('[INFO] approx. FPS: {:.2f}'.format(fps.fps()))
-
     video_capture.stop()
     cv2.destroyAllWindows()

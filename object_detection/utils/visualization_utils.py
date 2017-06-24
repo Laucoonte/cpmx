@@ -397,9 +397,12 @@ def visualize_boxes_and_labels_on_image_array(image,
           box_to_color_map[box] = STANDARD_COLORS[
               classes[i] % len(STANDARD_COLORS)]
 
+  # Counter
+  counter = 0
   # Draw all boxes onto image.
   for box, color in six.iteritems(box_to_color_map):
     ymin, xmin, ymax, xmax = box
+    counter+=1
     if instance_masks is not None:
       draw_mask_on_image_array(
           image,
@@ -423,3 +426,4 @@ def visualize_boxes_and_labels_on_image_array(image,
           color=color,
           radius=line_thickness / 2,
           use_normalized_coordinates=use_normalized_coordinates)
+  print(counter)
