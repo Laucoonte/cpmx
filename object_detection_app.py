@@ -4,10 +4,8 @@ import time
 import argparse
 import numpy as np
 import tensorflow as tf
-from paths import marker, pathfinder
-# Imports for Debugging
-from pprint import pprint
 
+from paths import marker, pathfinder
 from utils import FPS, WebcamVideoStream
 from multiprocessing import Process, Queue, Pool
 from object_detection.utils import label_map_util
@@ -30,19 +28,6 @@ categories = label_map_util.convert_label_map_to_categories(label_map, max_num_c
                                                             use_display_name=True)
 category_index = label_map_util.create_category_index(categories)
 
-# Argument parser
-parser = argparse.ArgumentParser()
-parser.add_argument('-src', '--source', dest='video_source', type=int,
-                    default=0, help='Device index of the camera.')
-parser.add_argument('-wd', '--width', dest='width', type=int,
-                    default=480, help='Width of the frames in the video stream.')
-parser.add_argument('-ht', '--height', dest='height', type=int,
-                    default=360, help='Height of the frames in the video stream.')
-parser.add_argument('-num-w', '--num-workers', dest='num_workers', type=int,
-                    default=2, help='Number of workers.')
-parser.add_argument('-q-size', '--queue-size', dest='queue_size', type=int,
-                    default=5, help='Size of the queue.')
-args = parser.parse_args()
 
 ## Init program
 
@@ -72,7 +57,7 @@ def detect_objects(image_np, sess, detection_graph):
         np.squeeze(scores),
         category_index,
         use_normalized_coordinates=True,
-        line_thickness=8)
+        line_thickness=4)
 
     matrix= vis_util.giveme_the_ponits(image_np,
         np.squeeze(boxes),
@@ -80,28 +65,40 @@ def detect_objects(image_np, sess, detection_graph):
         np.squeeze(scores),
         category_index,
         use_normalized_coordinates=True,
-        line_thickness=8,
+        line_thickness=4,
         )
-    #print matrix
+    print(np.squeeze(boxes)[0])
+    """
     print(len(matrix))
-    """ Matrix is now like
+     Matrix is now like
         matrix=[ box1-->[ymin, xmin, ymax, xmax]
                  box2-->[ymin, xmin, ymax, xmax]
                  ...
                  ...
                  boxn-->[ymin, xmin, ymax, xmax]]
-    """
-    route="0"*480
+
+    route="-"*480
     for i in range(len(matrix)):
         a=int(matrix[i][1])
         b=int(matrix[i][3])
         route=marker(a,b,route,"X")
-    route=pathfinder(route,50,"0")
-    print(route)
+    route=pathfinder(route,50,"-")
+    print(route)"""
     return image_np
 
 
+
 def worker(input_q, output_q):
+    sess = tf.Session(graph=detection_graph)
+    fps = FPS().start()
+    while True:
+        fps.update()
+        frame = input_q.get()
+        output_q.put(detect_objects(frame, sess, detection_graph))
+    fps.stop()
+    sess.close()
+
+if __name__ == '__main__':
     # Load a (frozen) Tensorflow model into memory.
     detection_graph = tf.Graph()
     with detection_graph.as_default():
@@ -111,18 +108,22 @@ def worker(input_q, output_q):
             od_graph_def.ParseFromString(serialized_graph)
             tf.import_graph_def(od_graph_def, name='')
 
-        sess = tf.Session(graph=detection_graph)
 
-    fps = FPS().start()
-    while True:
-        fps.update()
-        frame = input_q.get()
-        output_q.put(detect_objects(frame, sess, detection_graph))
+    # Argument parser
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-src', '--source', dest='video_source', type=int,
+                        default=0, help='Device index of the camera.')
+    parser.add_argument('-wd', '--width', dest='width', type=int,
+                        default=480, help='Width of the frames in the video stream.')
+    parser.add_argument('-ht', '--height', dest='height', type=int,
+                        default=360, help='Height of the frames in the video stream.')
+    parser.add_argument('-num-w', '--num-workers', dest='num_workers', type=int,
+                        default=2, help='Number of workers.')
+    parser.add_argument('-q-size', '--queue-size', dest='queue_size', type=int,
+                        default=5, help='Size of the queue.')
+    args = parser.parse_args()
 
-    fps.stop()
-    sess.close()
-
-if __name__ == '__main__':
+    #
     input_q = Queue(maxsize=args.queue_size)
     output_q = Queue(maxsize=args.queue_size)
 
@@ -136,12 +137,11 @@ if __name__ == '__main__':
     fps = FPS().start()
 
     while True:  # fps._numFrames < 120
-        frame = video_capture.read()
-        input_q.put(frame)
-
+        frame = video_capture.read() #Get a frame
+        input_q.put(frame) #Save in input
         t = time.time()
 
-        cv2.imshow('Video', output_q.get())
+        cv2.imshow('Video', output_q.get()) #show image in "video" -- output_q.get() is an image in np.array()
         fps.update()
 
         print('[INFO] elapsed time: {:.2f}'.format(time.time() - t))
