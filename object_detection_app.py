@@ -4,7 +4,7 @@ import time
 import argparse
 import numpy as np
 import tensorflow as tf
-
+from paths import marker, pathfinder
 # Imports for Debugging
 from pprint import pprint
 
@@ -73,6 +73,31 @@ def detect_objects(image_np, sess, detection_graph):
         category_index,
         use_normalized_coordinates=True,
         line_thickness=8)
+
+    matrix= vis_util.giveme_the_ponits(image_np,
+        np.squeeze(boxes),
+        np.squeeze(classes).astype(np.int32),
+        np.squeeze(scores),
+        category_index,
+        use_normalized_coordinates=True,
+        line_thickness=8,
+        )
+    #print matrix
+    print(len(matrix))
+    """ Matrix is now like
+        matrix=[ box1-->[ymin, xmin, ymax, xmax]
+                 box2-->[ymin, xmin, ymax, xmax]
+                 ...
+                 ...
+                 boxn-->[ymin, xmin, ymax, xmax]]
+    """
+    route="0"*480
+    for i in range(len(matrix)):
+        a=int(matrix[i][1])
+        b=int(matrix[i][3])
+        route=marker(a,b,route,"X")
+    route=pathfinder(route,50,"0")
+    print(route)
     return image_np
 
 
