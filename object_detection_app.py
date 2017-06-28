@@ -5,7 +5,7 @@ import argparse
 import numpy as np
 import tensorflow as tf
 
-from paths import marker, pathfinder
+from paths import marker, pathfinder,giveme_the_ponits
 from utils import FPS, WebcamVideoStream
 from multiprocessing import Process, Queue, Pool
 from object_detection.utils import label_map_util
@@ -32,6 +32,9 @@ category_index = label_map_util.create_category_index(categories)
 ## Init program
 
 def detect_objects(image_np, sess, detection_graph):
+    """ image_np image in np array
+        sess  tf.Session()
+    """
     # Expand dimensions since the model expects images to have shape: [1, None, None, 3]
     image_np_expanded = np.expand_dims(image_np, axis=0)
     image_tensor = detection_graph.get_tensor_by_name('image_tensor:0')
@@ -48,6 +51,7 @@ def detect_objects(image_np, sess, detection_graph):
     (boxes, scores, classes, num_detections) = sess.run(
         [boxes, scores, classes, num_detections],
         feed_dict={image_tensor: image_np_expanded})
+
     #print(np.squeeze(boxes).shape)
     # Visualization of the results of a detection.
     vis_util.visualize_boxes_and_labels_on_image_array(
@@ -59,31 +63,15 @@ def detect_objects(image_np, sess, detection_graph):
         use_normalized_coordinates=True,
         line_thickness=4)
 
-    matrix= vis_util.giveme_the_ponits(image_np,
+    a=giveme_the_ponits(
         np.squeeze(boxes),
-        np.squeeze(classes).astype(np.int32),
         np.squeeze(scores),
-        category_index,
-        use_normalized_coordinates=True,
-        line_thickness=4,
+        width=480,
+        height=360,
+        ycloseness=360,
+        xwidthness=100
         )
-    print(np.squeeze(boxes)[0])
-    """
-    print(len(matrix))
-     Matrix is now like
-        matrix=[ box1-->[ymin, xmin, ymax, xmax]
-                 box2-->[ymin, xmin, ymax, xmax]
-                 ...
-                 ...
-                 boxn-->[ymin, xmin, ymax, xmax]]
-
-    route="-"*480
-    for i in range(len(matrix)):
-        a=int(matrix[i][1])
-        b=int(matrix[i][3])
-        route=marker(a,b,route,"X")
-    route=pathfinder(route,50,"-")
-    print(route)"""
+    print(a)
     return image_np
 
 
@@ -94,7 +82,8 @@ def worker(input_q, output_q):
     while True:
         fps.update()
         frame = input_q.get()
-        output_q.put(detect_objects(frame, sess, detection_graph))
+        img = detect_objects(frame, sess, detection_graph)
+        output_q.put(img)
     fps.stop()
     sess.close()
 
@@ -130,7 +119,6 @@ if __name__ == '__main__':
     process = Process(target=worker, args=((input_q, output_q)))
     process.daemon = True
     pool = Pool(args.num_workers, worker, (input_q, output_q))
-
     video_capture = WebcamVideoStream(src=args.video_source,
                                       width=args.width,
                                       height=args.height).start()
