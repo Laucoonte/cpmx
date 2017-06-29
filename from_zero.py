@@ -4,8 +4,8 @@ import time
 import argparse
 import numpy as np
 import tensorflow as tf
-from picamera.array import PiRGBArray
-from picamera import PiCamera
+import picamera
+import picamera.array
 
 from paths import marker, pathfinder,giveme_the_ponits
 from utils import FPS, WebcamVideoStream
@@ -50,8 +50,8 @@ stream = picamera.array.PiRGBArray(camera)
 with detection_graph.as_default():
   with tf.Session(graph=detection_graph) as sess:
     while True:
-      camera.capture(stream, format='bgr')
-      image_np = stream.array
+      camera.capture(stream,'rgb')
+      image_np=stream.array
 
       # the array based representation of the image will be used later in order to prepare the
       # result image with boxes and labels on it.
@@ -75,7 +75,8 @@ with detection_graph.as_default():
         np.squeeze(boxes),
         np.squeeze(scores),
         width=480,
-        height=360,
+        height=368,
         ycloseness=360,
         xwidthness=100
         )
+      stream.truncate(0)
