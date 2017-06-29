@@ -6,7 +6,7 @@ import numpy as np
 import tensorflow as tf
 import picamera
 import picamera.array
-
+import stepper
 from paths import marker, pathfinder,giveme_the_ponits
 from utils import FPS, WebcamVideoStream
 from multiprocessing import Process, Queue, Pool
@@ -24,6 +24,8 @@ PATH_TO_LABELS = os.path.join(CWD_PATH, 'object_detection', 'data', 'mscoco_labe
 
 NUM_CLASSES = 90
 
+#Initial position for step motor
+STEP_INIT = 230
 # Loading label map
 label_map = label_map_util.load_labelmap(PATH_TO_LABELS)
 categories = label_map_util.convert_label_map_to_categories(label_map, max_num_classes=NUM_CLASSES,
@@ -46,6 +48,7 @@ camera.resolution = (480,360)
 camera.vflip= True
 camera.start_preview()
 stream = picamera.array.PiRGBArray(camera)
+## Library for movement
 
 with detection_graph.as_default():
   with tf.Session(graph=detection_graph) as sess:
@@ -79,4 +82,5 @@ with detection_graph.as_default():
         ycloseness=360,
         xwidthness=100
         )
+      INIT_STEP=stepper.dsp(INIT_STEP,a)
       stream.truncate(0)
