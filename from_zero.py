@@ -82,5 +82,5 @@ with detection_graph.as_default():
         ycloseness=360,
         xwidthness=100
         )
-      INIT_STEP=stepper.dsp(INIT_STEP,a)
+      STEP_INIT=stepper.dsp(STEP_INIT,a)
       stream.truncate(0)
