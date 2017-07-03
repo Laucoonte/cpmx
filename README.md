@@ -6,6 +6,9 @@ A real-time object recognition application using [Google's TensorFlow Object Det
 
 - [TensorFlow 1.2](https://www.tensorflow.org/)
 - OpenCV 3.0--> [How to install](http://www.pyimagesearch.com/2016/10/24/ubuntu-16-04-how-to-install-opencv/)
+- Client : gst-launch-1.0 -v tcpclientsrc host=192.168.1.70 port=5000  ! gdpdepay !  rtph264depay ! avdec_h264 ! videoconvert ! autovideosink sync=false
+- Rasp : raspivid -t 999999 -h 720 -w 1080 -fps 60 -hf -b 2000000 -o - | gst-launch-1.0 -v fdsrc ! h264parse !  rtph264pay config-interval=1 pt=96 ! gdppay ! tcpserversink host=192.168.1.70 port=5000
+
 
 ## Getting Started
 1. You can do simple `python object_detection_app.py`
