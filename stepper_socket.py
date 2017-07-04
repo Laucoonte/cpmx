@@ -35,7 +35,7 @@ pscInc = 230 # Posicion de calibracion y de inicio
 
 # Configuracion del servidor
 s = socket.socket()
-adress = ("172.16.51.48",9999) # Modificar direccion segun IP Raspberry Pi
+adress = ("",9000) # Modificar direccion segun IP Raspberry Pi
 s.bind(adress)
 s.listen(1) # Conexiones maximas permitidas
 sc,addr = s.accept()
@@ -133,9 +133,9 @@ def dsp(pscInc,pscFin): # Requiere posicion inicial y final
 #
 while True:
     setStp(0,0,0,0)
-    # print "Esperando en: ",pscInc
+    print "Esperando en: ",pscInc
     pscFin = sc.recv(1024)
     pscFin = int(pscFin)
     pscInc = dsp(pscInc,pscFin)
     sc.send(str(pscInc))
-    # print "Me movi a: ",pscFin
+    print "Me movi a: ",pscFin

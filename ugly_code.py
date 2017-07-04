@@ -18,6 +18,7 @@ import time # To know FPS processed
 import argparse # To pass args in terminal`
 import numpy as np # Sci Library for python
 import tensorflow as tf # Tensorflow
+import socket
 
 from paths import marker, pathfinder,giveme_the_ponits # Paths Library to find free way
 from utils import FPS, WebcamVideoStream  # Utils for stream video
@@ -25,6 +26,12 @@ from multiprocessing import Process, Queue, Pool #Multiprocessing
 from object_detection.utils import label_map_util # Object detectionlibrary
 from object_detection.utils import visualization_utils as vis_util #Object detection library
 
+# ____________________________________________________
+# Configuracion del socket
+s = socket.socket()
+adress = ("172.16.52.40",9000)
+s.connect(adress)
+# ____________________________________________________
 
 #Get pwd
 CWD_PATH = os.getcwd()
@@ -95,15 +102,15 @@ def detect_objects(image_np, sess, detection_graph):
         use_normalized_coordinates=True,
         line_thickness=4)
 
-    giveme_the_ponits(
+    a=giveme_the_ponits(
         np.squeeze(boxes),
         np.squeeze(scores),
         width=480,
         height=360,
         ycloseness=360,
-        xwidthness=100
+        xwidthness=80
         )
-    return image_np
+    return a,image_np
 
 def worker(input_q, output_q):
     sess = tf.Session(graph=detection_graph)
@@ -111,8 +118,12 @@ def worker(input_q, output_q):
     while True:
         fps.update()
         frame = input_q.get()
-        img = detect_objects(frame, sess, detection_graph)
+        a,img = detect_objects(frame, sess, detection_graph)
         output_q.put(img)
+        a = str(a)
+        print a
+        s.send(a)
+        s.recv(1024)
     fps.stop()
     sess.close()
 
