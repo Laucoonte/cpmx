@@ -1,4 +1,4 @@
-""" Basically this program makes this
+""" Basically this program makes with python this
     gst-launch-1.0 -v tcpclientsrc host=192.168.1.70 port=5000 \
                        ! gdpdepay !  rtph264depay ! avdec_h264 \
                        ! videoconvert ! autovideosink sync=false
@@ -18,7 +18,7 @@ Gst.init(None)
 
 RASPI_IP=''
 
-class Player(object):
+class Player():
     def __init__(self):
         self.window = Gtk.Window()
         self.window.connect('destroy', self.quit)
@@ -42,7 +42,7 @@ class Player(object):
 
         ## Video Streaming Pipeline
         source = Gst.ElementFactory.make('tcpclientsrc', 'source')
-        source.set_property("host", '172.16.52.13')
+        source.set_property("host", '172.16.52.40')
         source.set_property("port", 5000)
         gdpdepay = Gst.ElementFactory.make('gdpdepay', 'gdpdepay')
         rtph264depay= Gst.ElementFactory.make('rtph264depay', 'rtph264depay')
@@ -50,6 +50,15 @@ class Player(object):
         videoconvert = Gst.ElementFactory.make('videoconvert', 'videoconverter')
         autovideosink = Gst.ElementFactory.make('autovideosink', 'autovideosink')
         autovideosink.set_property('sync', False)
+
+        # Adding Pipeline
+        self.pipeline.add(source, gdpdepay, rtph264depay, avdec_h264, videoconvert, autovideosink)
+        ## Piping
+        source.link(gdpdepay)
+        gdpdepay.link(rtph264depay)
+        rtph264depay.link(avdec_h264)
+        avdec_h264.link(videoconvert)
+        videoconvert.link(autovideosink)
 
     def run(self):
         self.window.show_all()
