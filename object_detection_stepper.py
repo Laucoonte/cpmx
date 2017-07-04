@@ -4,12 +4,20 @@ import time
 import argparse
 import numpy as np
 import tensorflow as tf
+import socket
 
 from paths import marker, pathfinder,giveme_the_ponits
 from utils import FPS, WebcamVideoStream
 from multiprocessing import Process, Queue, Pool
 from object_detection.utils import label_map_util
 from object_detection.utils import visualization_utils as vis_util
+
+# ____________________________________________________
+# Configuracion del socket
+s = socket.socket()
+adress = ("172.16.51.48",9999)
+s.connect(adress)
+# ____________________________________________________
 
 CWD_PATH = os.getcwd()
 
@@ -69,10 +77,9 @@ def detect_objects(image_np, sess, detection_graph):
         width=480,
         height=360,
         ycloseness=360,
-        xwidthness=100
+        xwidthness=80
         )
-    print(a)
-    return image_np
+    return a,image_np
 
 
 
@@ -82,8 +89,12 @@ def worker(input_q, output_q):
     while True:
         fps.update()
         frame = input_q.get()
-        img = detect_objects(frame, sess, detection_graph)
+        a,img = detect_objects(frame, sess, detection_graph)
         output_q.put(img)
+        a = str(a)
+        print a
+        s.send(a)
+        s.recv(1024)
     fps.stop()
     sess.close()
 
@@ -101,7 +112,7 @@ if __name__ == '__main__':
     # Argument parser
     parser = argparse.ArgumentParser()
     parser.add_argument('-src', '--source', dest='video_source', type=int,
-                        default=2, help='Device index of the camera.')
+                        default=3, help='Device index of the camera.')
     parser.add_argument('-wd', '--width', dest='width', type=int,
                         default=480, help='Width of the frames in the video stream.')
     parser.add_argument('-ht', '--height', dest='height', type=int,
@@ -132,13 +143,13 @@ if __name__ == '__main__':
         cv2.imshow('Video', output_q.get()) #show image in "video" -- output_q.get() is an image in np.array()
         fps.update()
 
-        print('[INFO] elapsed time: {:.2f}'.format(time.time() - t))
+        # print('[INFO] elapsed time: {:.2f}'.format(time.time() - t))
 
         if cv2.waitKey(1) & 0xFF ==  27 : # Press Esc for quit
             break
 
     fps.stop()
-    print('[INFO] elapsed time (total): {:.2f}'.format(fps.elapsed()))
-    print('[INFO] approx. FPS: {:.2f}'.format(fps.fps()))
+    # print('[INFO] elapsed time (total): {:.2f}'.format(fps.elapsed()))
+    # print('[INFO] approx. FPS: {:.2f}'.format(fps.fps()))
     video_capture.stop()
     cv2.destroyAllWindows()
