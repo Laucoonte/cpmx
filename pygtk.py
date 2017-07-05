@@ -16,7 +16,16 @@ from gi.repository import GdkX11, GstVideo
 GObject.threads_init()
 Gst.init(None)
 
-RASPI_IP=''
+###################################
+#Configuration
+#GStreamer Port
+IP_RASP ="172.6.52.40"
+GPORT_RASP=5000 # Gstreamer Raspberry Port
+#Image Detection size configuration in pixels
+WIDTH= 480
+HEIGHT= 360
+###################################
+
 
 class Player():
     def __init__(self):
@@ -41,24 +50,24 @@ class Player():
         self.bus.connect('sync-message::element', self.on_sync_message)
 
         ## Video Streaming Pipeline
-        source = Gst.ElementFactory.make('tcpclientsrc', 'source')
-        source.set_property("host", '172.16.52.40')
-        source.set_property("port", 5000)
-        gdpdepay = Gst.ElementFactory.make('gdpdepay', 'gdpdepay')
-        rtph264depay= Gst.ElementFactory.make('rtph264depay', 'rtph264depay')
-        avdec_h264 = Gst.ElementFactory.make('avdec_h264', 'avdec_h264')
-        videoconvert = Gst.ElementFactory.make('videoconvert', 'videoconverter')
-        autovideosink = Gst.ElementFactory.make('autovideosink', 'autovideosink')
-        autovideosink.set_property('sync', False)
+        self.source = Gst.ElementFactory.make('tcpclientsrc', 'source')
+        self.source.set_property("host", '172.16.52.40')
+        self.source.set_property("port", 5000)
+        self.gdpdepay = Gst.ElementFactory.make('gdpdepay', 'gdpdepay')
+        self.rtph264depay= Gst.ElementFactory.make('rtph264depay', 'rtph264depay')
+        self.avdec_h264 = Gst.ElementFactory.make('avdec_h264', 'avdec_h264')
+        self.videoconvert = Gst.ElementFactory.make('videoconvert', 'videoconverter')
+        self.autovideosink = Gst.ElementFactory.make('autovideosink', 'autovideosink')
+        self.autovideosink.set_property('sync', False)
 
         # Adding Pipeline
-        self.pipeline.add(source, gdpdepay, rtph264depay, avdec_h264, videoconvert, autovideosink)
+        self.pipeline.add(self.source, self.gdpdepay, self.rtph264depay, self.avdec_h264, self.videoconvert, self.autovideosink)
         ## Piping
-        source.link(gdpdepay)
-        gdpdepay.link(rtph264depay)
-        rtph264depay.link(avdec_h264)
-        avdec_h264.link(videoconvert)
-        videoconvert.link(autovideosink)
+        self.source.link(self.gdpdepay)
+        self.gdpdepay.link(self.rtph264depay)
+        self.rtph264depay.link(self.avdec_h264)
+        self.avdec_h264.link(self.videoconvert)
+        self.videoconvert.link(self.autovideosink)
 
     def run(self):
         self.window.show_all()
@@ -86,4 +95,5 @@ class Player():
     def on_error(self, bus, msg):
         print('on_error():', msg.parse_error())
 p=Player()
+p.source.set_property("host",IP_RASP )
 p.run()

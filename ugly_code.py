@@ -1,35 +1,36 @@
-#!/usr/bin/env python3
-# -*- coding:utf-8 -*-
-# GStreamer SDK Tutorials in Python
-#
-#     basic-tutorial-2
-#
-"""
-basic-tutorial-2: GStreamer concepts
-http://docs.gstreamer.com/display/GstSDK/Basic+tutorial+2%3A+GStreamer+concepts
-"""
 
 import sys
-from gi.repository import Gst
 import cv2
-import numpy as np
 import os #For Getting directory paths
 import time # To know FPS processed
 import argparse # To pass args in terminal`
 import numpy as np # Sci Library for python
 import tensorflow as tf # Tensorflow
-import socket
+import socket # To pass value of movement to Rasp
 
+from gi.repository import Gst
 from paths import marker, pathfinder,giveme_the_ponits # Paths Library to find free way
-from utils import FPS, WebcamVideoStream  # Utils for stream video
+from utilse import FPS, WebcamVideoStream  # Utils for stream video
 from multiprocessing import Process, Queue, Pool #Multiprocessing
 from object_detection.utils import label_map_util # Object detectionlibrary
 from object_detection.utils import visualization_utils as vis_util #Object detection library
 
+###################################
+#Configuration
+# Socket Configuration
+IP_RASP ="172.6.52.40"
+SPORT_RASP=9000 #Raspberry Socket Port
+#GStreamer Port
+GPORT_RASP=5000 # Gstreamer Raspberry Port
+#Image Detection size configuration in pixels
+WIDTH= 480
+HEIGHT= 360
+###################################
+
 # ____________________________________________________
-# Configuracion del socket
+#Socket initialization
 s = socket.socket()
-adress = ("172.16.52.40",9000)
+adress = (IP_RASP,SPORT_RASP)
 s.connect(adress)
 # ____________________________________________________
 
@@ -55,14 +56,15 @@ image_arr = None
 
 
 ## Init program
+
 # Argument parser
 parser = argparse.ArgumentParser()
 parser.add_argument('-src', '--source', dest='video_source', type=int,
                     default=0, help='Device index of the camera.')
 parser.add_argument('-wd', '--width', dest='width', type=int,
-                    default=480, help='Width of the frames in the video stream.')
+                    default=WIDTH, help='Width of the frames in the video stream.')
 parser.add_argument('-ht', '--height', dest='height', type=int,
-                    default=360, help='Height of the frames in the video stream.')
+                    default=HEIGHT, help='Height of the frames in the video stream.')
 parser.add_argument('-num-w', '--num-workers', dest='num_workers', type=int,
                     default=2, help='Number of workers.')
 parser.add_argument('-q-size', '--queue-size', dest='queue_size', type=int,
@@ -86,12 +88,10 @@ def detect_objects(image_np, sess, detection_graph):
     classes = detection_graph.get_tensor_by_name('detection_classes:0')
     num_detections = detection_graph.get_tensor_by_name('num_detections:0')
 
-    # Detection happens here
+    # Detection happens Here
     (boxes, scores, classes, num_detections) = sess.run(
         [boxes, scores, classes, num_detections],
         feed_dict={image_tensor: image_np_expanded})
-
-    #print(np.squeeze(boxes).shape)
     # Visualization of the results of a detection.
     vis_util.visualize_boxes_and_labels_on_image_array(
         image_np,
@@ -101,12 +101,12 @@ def detect_objects(image_np, sess, detection_graph):
         category_index,
         use_normalized_coordinates=True,
         line_thickness=4)
-
+    # Prints the output in string format and gives the coordinate of movement
     a=giveme_the_ponits(
         np.squeeze(boxes),
         np.squeeze(scores),
-        width=480,
-        height=360,
+        width=WIDTH,
+        height=HEIGTH,
         ycloseness=360,
         xwidthness=80
         )
@@ -127,7 +127,7 @@ def worker(input_q, output_q):
     fps.stop()
     sess.close()
 
-
+# Converts a Buffer of GStreamer in to np.array readable in OpenCV
 def gst_to_opencv(sample):
     buf = sample.get_buffer()
     caps = sample.get_caps()
@@ -138,7 +138,6 @@ def gst_to_opencv(sample):
         buffer=buf.extract_dup(0, buf.get_size()),
         dtype=np.uint8)
     return arr
-
 def new_buffer(sink, data):
     global image_arr
     sample = sink.emit("pull-sample")
@@ -147,10 +146,18 @@ def new_buffer(sink, data):
     #print image_arr.shape
     return Gst.FlowReturn.OK
 
-# Create the elements
+# PIPELINE PARAMATERS
+
+"""
+Basically this pipeline makes with python this
+    gst-launch-1.0 -v tcpclientsrc host=IP_RASP port=GIP_RASP \
+                       ! gdpdepay !  rtph264depay ! avdec_h264 \
+                       ! videoconvert ! appsink sync=false emit-signals=True
+
+"""
 source = Gst.ElementFactory.make('tcpclientsrc', 'source')
-source.set_property("host", '172.16.52.40')
-source.set_property("port", 5000)
+source.set_property("host", IP_RASP)
+source.set_property("port", GIP_RASP)
 gdpdepay = Gst.ElementFactory.make('gdpdepay', 'gdpdepay')
 rtph264depay= Gst.ElementFactory.make('rtph264depay', 'rtph264depay')
 avdec_h264 = Gst.ElementFactory.make('avdec_h264', 'avdec_h264')
@@ -196,7 +203,9 @@ with detection_graph.as_default():
         serialized_graph = fid.read()
         od_graph_def.ParseFromString(serialized_graph)
         tf.import_graph_def(od_graph_def, name='')
-#########################33
+
+
+#########################
 input_q = Queue(maxsize=args.queue_size)
 output_q = Queue(maxsize=args.queue_size)
 
