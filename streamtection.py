@@ -10,7 +10,7 @@ import socket # To pass value of movement to Rasp
 
 from gi.repository import Gst
 from paths import marker, pathfinder,giveme_the_ponits # Paths Library to find free way
-from utilse import FPS, WebcamVideoStream  # Utils for stream video
+from utils import FPS, WebcamVideoStream  # Utils for stream video
 from multiprocessing import Process, Queue, Pool #Multiprocessing
 from object_detection.utils import label_map_util # Object detectionlibrary
 from object_detection.utils import visualization_utils as vis_util #Object detection library
@@ -18,7 +18,7 @@ from object_detection.utils import visualization_utils as vis_util #Object detec
 ###################################
 #Configuration
 # Socket Configuration
-IP_RASP ="172.6.52.40"
+IP_RASP ="192.168.43.188"
 SPORT_RASP=9000 #Raspberry Socket Port
 #GStreamer Port
 GPORT_RASP=5000 # Gstreamer Raspberry Port
@@ -30,7 +30,7 @@ HEIGHT= 360
 # ____________________________________________________
 #Socket initialization
 s = socket.socket()
-adress = (IP_RASP,SPORT_RASP)
+adress = (IP_RASP, SPORT_RASP)
 s.connect(adress)
 # ____________________________________________________
 
@@ -106,7 +106,7 @@ def detect_objects(image_np, sess, detection_graph):
         np.squeeze(boxes),
         np.squeeze(scores),
         width=WIDTH,
-        height=HEIGTH,
+        height=HEIGHT,
         ycloseness=360,
         xwidthness=80
         )
@@ -157,7 +157,7 @@ Basically this pipeline makes with python this
 """
 source = Gst.ElementFactory.make('tcpclientsrc', 'source')
 source.set_property("host", IP_RASP)
-source.set_property("port", GIP_RASP)
+source.set_property("port", GPORT_RASP)
 gdpdepay = Gst.ElementFactory.make('gdpdepay', 'gdpdepay')
 rtph264depay= Gst.ElementFactory.make('rtph264depay', 'rtph264depay')
 avdec_h264 = Gst.ElementFactory.make('avdec_h264', 'avdec_h264')
