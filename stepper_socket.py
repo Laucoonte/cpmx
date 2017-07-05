@@ -1,4 +1,4 @@
-# ____________________________________________________
+# Este programa estara dentro de la Raspberry Pi
 # ____________________________________________________
 """ import piCamera
 # load Camera
@@ -11,6 +11,7 @@ camera.capture("olakease.jpg") """
 # Importacion de bibliotecas
 import RPi.GPIO as GPIO # Board de Raspberry Pi
 import time # "Control" de tiempo
+import socket # Creacion de servidor en Raspberry Pi
 
 # Numeracion de pines por el sistema GPIO
 GPIO.setmode(GPIO.BCM)
@@ -29,7 +30,16 @@ GPIO.setup(A2,GPIO.OUT)
 GPIO.setup(B2,GPIO.OUT)
 
 # Asignacion de velocidad del motor a pasos (seg)
-esp = 0.001 # Correcto
+esp = 0.002 # Correcto
+pscInc = 230 # Posicion de calibracion y de inicio
+
+# Configuracion del servidor
+s = socket.socket()
+adress = ("",9000) # Modificar direccion segun IP Raspberry Pi
+s.bind(adress)
+s.listen(1) # Conexiones maximas permitidas
+sc,addr = s.accept()
+
 # ____________________________________________________
 # FUNCIONES
 # *
@@ -121,12 +131,11 @@ def dsp(pscInc,pscFin): # Requiere posicion inicial y final
 
 # LOOP
 #
-"""while True:
-    time.sleep(0.5)
+while True:
     setStp(0,0,0,0)
-    pscFin = raw_input("Posicion de destino: ") # 0 - 480
+    print "Esperando en: ",pscInc
+    pscFin = sc.recv(1024)
     pscFin = int(pscFin)
     pscInc = dsp(pscInc,pscFin)
-    print "Ya estas peinado pa tras!"
-
-"""
+    sc.send(str(pscInc))
+    print "Me movi a: ",pscFin

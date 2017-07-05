@@ -397,6 +397,7 @@ def visualize_boxes_and_labels_on_image_array(image,
           box_to_color_map[box] = STANDARD_COLORS[
               classes[i] % len(STANDARD_COLORS)]
 
+
   # Draw all boxes onto image.
   for box, color in six.iteritems(box_to_color_map):
     ymin, xmin, ymax, xmax = box
